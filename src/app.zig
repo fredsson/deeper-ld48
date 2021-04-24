@@ -1,16 +1,14 @@
-const print = @import("std").debug.print;
-
-const Renderer = @import("gfx/renderer.zig").Renderer;
-const Logger = @import("logger.zig").Logger;
-
 const sdl = @cImport({
   @cInclude("SDL2/SDL.h");
 });
 
+const Renderer = @import("gfx/renderer.zig").Renderer;
+const Logger = @import("logger.zig").Logger;
+
 pub const App = struct {
   running: bool,
-  renderer: Renderer,
   logger: Logger,
+  renderer: Renderer,
 
   pub fn init() App {
     const logger = Logger.init();
@@ -20,7 +18,7 @@ pub const App = struct {
     return App {
       .running = true,
       .logger = logger,
-      .renderer = renderer
+      .renderer = renderer,
     };
   }
 
@@ -31,17 +29,46 @@ pub const App = struct {
 
   pub fn run(self: *App) void {
     while(self.running) {
-      var event: sdl.SDL_Event = undefined;
-      while(sdl.SDL_PollEvent(&event) != 0) {
-        switch(event.@"type") {
-          sdl.SDL_QUIT => {
-            self.running = false;
-          },
-          else => {},
-        }
-      }
+
+      self.handleEvents();
 
       self.renderer.draw();
+    }
+  }
+
+  fn handleEvents(self: *App) void {
+    var event: sdl.SDL_Event = undefined;
+    while(sdl.SDL_PollEvent(&event) != 0) {
+      switch(event.@"type") {
+        sdl.SDL_QUIT => {
+          self.running = false;
+        },
+        sdl.SDL_KEYDOWN => {
+          self.handleKeyDown(event.@"key");
+        },
+        sdl.SDL_KEYUP => {
+          self.handleKeyUp(event.@"key");
+        },
+        else => {},
+      }
+    }
+  }
+
+  fn handleKeyDown(self: *App, keyEvent: sdl.SDL_KeyboardEvent) void {
+    switch(keyEvent.keysym.sym) {
+      sdl.SDLK_w, sdl.SDLK_a, sdl.SDLK_s, sdl.SDLK_d => {
+        self.logger.debug("hello user!");
+      },
+      else => {}
+    }
+  }
+
+  fn handleKeyUp(self: *App, keyEvent: sdl.SDL_KeyboardEvent) void {
+        switch(keyEvent.keysym.sym) {
+      sdl.SDLK_w, sdl.SDLK_a, sdl.SDLK_s, sdl.SDLK_d => {
+        self.logger.debug("bye user!");
+      },
+      else => {}
     }
   }
 };
