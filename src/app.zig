@@ -1,6 +1,4 @@
-const sdl = @cImport({
-  @cInclude("SDL2/SDL.h");
-});
+const c = @import("c.zig");
 
 const Renderer = @import("gfx/renderer.zig").Renderer;
 const Logger = @import("logger.zig").Logger;
@@ -37,16 +35,16 @@ pub const App = struct {
   }
 
   fn handleEvents(self: *App) void {
-    var event: sdl.SDL_Event = undefined;
-    while(sdl.SDL_PollEvent(&event) != 0) {
+    var event: c.SDL_Event = undefined;
+    while(c.SDL_PollEvent(&event) != 0) {
       switch(event.@"type") {
-        sdl.SDL_QUIT => {
+        c.SDL_QUIT => {
           self.running = false;
         },
-        sdl.SDL_KEYDOWN => {
+        c.SDL_KEYDOWN => {
           self.handleKeyDown(event.@"key");
         },
-        sdl.SDL_KEYUP => {
+        c.SDL_KEYUP => {
           self.handleKeyUp(event.@"key");
         },
         else => {},
@@ -54,18 +52,18 @@ pub const App = struct {
     }
   }
 
-  fn handleKeyDown(self: *App, keyEvent: sdl.SDL_KeyboardEvent) void {
+  fn handleKeyDown(self: *App, keyEvent: c.SDL_KeyboardEvent) void {
     switch(keyEvent.keysym.sym) {
-      sdl.SDLK_w, sdl.SDLK_a, sdl.SDLK_s, sdl.SDLK_d => {
+      c.SDLK_w, c.SDLK_a, c.SDLK_s, c.SDLK_d => {
         self.logger.debug("hello user!");
       },
       else => {}
     }
   }
 
-  fn handleKeyUp(self: *App, keyEvent: sdl.SDL_KeyboardEvent) void {
-        switch(keyEvent.keysym.sym) {
-      sdl.SDLK_w, sdl.SDLK_a, sdl.SDLK_s, sdl.SDLK_d => {
+  fn handleKeyUp(self: *App, keyEvent: c.SDL_KeyboardEvent) void {
+    switch(keyEvent.keysym.sym) {
+      c.SDLK_w, c.SDLK_a, c.SDLK_s, c.SDLK_d => {
         self.logger.debug("bye user!");
       },
       else => {}
