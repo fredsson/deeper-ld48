@@ -1,33 +1,25 @@
+const c = @import("../c.zig");
+const math = @import("../math/math.zig");
 const std = @import("std");
-const debug = std.debug;
 
 const Logger = @import("../logger.zig").Logger;
-const Shader = @import("shader.zig").Shader;
-
-const c = @import("../c.zig");
-const opengl = @import("opengl.zig");
+const Scene = @import("view/scene.zig").Scene;
 
 const SdlError = error {
     SDLInitializationFailed,
 };
 
-const noPointerOffset: ?*const c_void = @intToPtr(?*c_void, 0);
-
-var vao: c.GLuint = 0;
-var vbo: c.GLuint = 0;
-
 pub const Renderer = struct {
+  allocator: *std.mem.Allocator,
   logger: *Logger,
   window: *c.SDL_Window,
   renderer: *c.SDL_Renderer,
   glContext: c.SDL_GLContext,
-  defaultShader: Shader,
+  scene: *Scene = undefined,
 
-  pub fn init(logger: *Logger) SdlError!Renderer {
-    logger.debug("renderer init!");
-
+  pub fn init(allocator: *std.mem.Allocator, logger: *Logger) SdlError!*Renderer {
     if (c.SDL_Init(c.SDL_INIT_VIDEO) != 0) {
-      logger.debug("failed to init c..");
+      logger.debug("failed to init SDL..");
       return error.SDLInitializationFailed;
     }
     errdefer {
@@ -62,54 +54,37 @@ pub const Renderer = struct {
     c.glewExperimental = c.GL_TRUE;
     _ = c.glewInit();
 
-    return Renderer {
-      .logger = logger,
-      .window = window,
-      .renderer = renderer,
-      .glContext = glContext,
-      .defaultShader = Shader.init("default"),
-    };
+    var result = allocator.create(Renderer) catch unreachable;
+    result.allocator = allocator;
+    result.logger = logger;
+    result.window = window;
+    result.renderer = renderer;
+    result.glContext = glContext;
+
+    return result;
   }
 
-  pub fn deinit(self: Renderer) void {
-    self.logger.debug("renderer deinit!");
 
-    self.defaultShader.deinit();
-
+  pub fn deinit(self: *Renderer) void {
     c.SDL_GL_DeleteContext(self.glContext);
     c.SDL_DestroyRenderer(self.renderer);
     c.SDL_DestroyWindow(self.window);
     c.SDL_Quit();
+    self.allocator.destroy(self);
   }
 
-  pub fn draw(self: Renderer) void {
+  pub fn addScene(self: *Renderer, scene: *Scene) void {
+    self.scene = scene;
+  }
+
+  pub fn draw(self: *Renderer) void {
     c.glClearColor(0.0, 0.0, 0.0, 1.0);
     c.glClear(c.GL_COLOR_BUFFER_BIT);
 
-    if (vao == 0 and vbo == 0) {
-      self.logger.debug("creating vao & vbo!");
-
-      c.glGenBuffers(1, &vbo);
-      c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
-      var array: [9]f32 = .{
-        -0.5, -0.5, 0.0,
-        0.0,  0.5, 0.0,
-        0.5, -0.5, 0.0,
-      };
-      c.glBufferData(c.GL_ARRAY_BUFFER, array.len * @sizeOf(f32), &array[0], c.GL_STATIC_DRAW);
-
-      c.glGenVertexArrays(1, &vao);
-      c.glBindVertexArray(vao);
-      c.glEnableVertexAttribArray(0);
-      c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
-      c.glVertexAttribPointer(0, 3, c.GL_FLOAT, c.GL_FALSE, 0, noPointerOffset);
-    }
-
-    self.defaultShader.enable();
-
-    c.glBindVertexArray(vao);
-    c.glDrawArrays(c.GL_TRIANGLES, 0, 3);
+    self.scene.draw();
 
     c.SDL_GL_SwapWindow(self.window);
   }
 };
+
+
