@@ -1,36 +1,63 @@
 const c = @import("c.zig");
+const std = @import("std");
 
 const Renderer = @import("gfx/renderer.zig").Renderer;
 const Logger = @import("logger.zig").Logger;
 
+const Game = @import("game/game.zig").Game;
+const MovementDirection = @import("game/player.zig").MovementDirection;
+const Scene = @import("gfx/view/scene.zig").Scene;
+
+const ns_per_s = comptime std.time.ns_per_ms * std.time.ms_per_s;
+
+var allocator = comptime std.heap.page_allocator;
+
 pub const App = struct {
   running: bool,
   logger: Logger,
-  renderer: Renderer,
+  renderer: *Renderer,
+  game: *Game,
+  scene: *Scene,
+  frameTimer: std.time.Timer,
 
   pub fn init() App {
-    const logger = Logger.init();
 
-    const renderer = Renderer.init(logger) catch unreachable;
+    var logger = Logger.init();
 
-    return App {
+    var renderer: *Renderer = Renderer.init(allocator, logger) catch unreachable;
+
+    var scene: *Scene = Scene.init(allocator);
+
+    var app = .{
       .running = true,
       .logger = logger,
       .renderer = renderer,
+      .game = Game.init(allocator),
+      .scene = scene,
+      .frameTimer = std.time.Timer.start() catch unreachable,
     };
+
+    renderer.addScene(app.scene);
+
+    return app;
   }
 
-  pub fn deinit(self: App) void {
-    self.logger.debug("deinit!");
+  pub fn deinit(self: *App) void {
+    self.scene.deinit();
     self.renderer.deinit();
   }
 
   pub fn run(self: *App) void {
     while(self.running) {
+      const dt: f32 = @intToFloat(f32, self.frameTimer.lap()) / @intToFloat(f32, ns_per_s);
 
       self.handleEvents();
 
+      self.game.update(dt);
+
       self.renderer.draw();
+
+      c.SDL_Delay(17);
     }
   }
 
@@ -54,18 +81,18 @@ pub const App = struct {
 
   fn handleKeyDown(self: *App, keyEvent: c.SDL_KeyboardEvent) void {
     switch(keyEvent.keysym.sym) {
-      c.SDLK_w, c.SDLK_a, c.SDLK_s, c.SDLK_d => {
-        self.logger.debug("hello user!");
-      },
+      c.SDLK_w => self.game.player.onMovement(MovementDirection.up),
+      c.SDLK_a => self.game.player.onMovement(MovementDirection.left),
+      c.SDLK_d => self.game.player.onMovement(MovementDirection.right),
       else => {}
     }
   }
 
   fn handleKeyUp(self: *App, keyEvent: c.SDL_KeyboardEvent) void {
     switch(keyEvent.keysym.sym) {
-      c.SDLK_w, c.SDLK_a, c.SDLK_s, c.SDLK_d => {
-        self.logger.debug("bye user!");
-      },
+      c.SDLK_w => self.game.player.onStopMovement(MovementDirection.up),
+      c.SDLK_a => self.game.player.onStopMovement(MovementDirection.left),
+      c.SDLK_d => self.game.player.onStopMovement(MovementDirection.right),
       else => {}
     }
   }

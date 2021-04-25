@@ -17,7 +17,7 @@ pub const Game = struct {
     var game = allocator.create(Game) catch unreachable;
     game.allocator = allocator;
     game.unHandledElapsedFrameTime = 0;
-    game.player = Player.init(game.onPlayerPositionChanged, startPosition);
+    game.player = Player.init(startPosition);
 
     return game;
   }
