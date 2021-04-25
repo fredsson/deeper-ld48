@@ -29,7 +29,7 @@ pub const Game = struct {
   pub fn update(self: *Game, dt: f32) void {
     self.fixedUpdate(dt);
 
-    self.dwarf.update(dt);
+    self.player.update(dt);
     // update all systems with dt
   }
 
@@ -45,7 +45,7 @@ pub const Game = struct {
       defer updates += 1;
       defer self.unHandledElapsedFrameTime -= tickRate;
 
-      self.dwarf.fixedUpdate();
+      self.player.fixedUpdate();
     }
   }
 };
