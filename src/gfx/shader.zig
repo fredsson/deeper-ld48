@@ -1,5 +1,6 @@
 const std = @import("std");
 const c = @import("../c.zig");
+const math = @import("../math/math.zig");
 
 var allocator = std.heap.page_allocator;
 
@@ -18,6 +19,12 @@ pub const Shader = struct {
 
   pub fn enable(self: Shader) void {
     c.glUseProgram(self.programId);
+  }
+
+  pub fn setUniformMat4(self: Shader, location: [*c]const u8, value: *math.Mat4x4) void {
+    const uniformLocation = c.glGetUniformLocation(self.programId, location);
+
+    c.glUniformMatrix4fv(uniformLocation, 1, c.GL_FALSE, &value.fields[0][0]);
   }
 
   pub fn disable(self: Shader) void {
@@ -49,7 +56,7 @@ fn loadShaderFromRelativePath(name: []const u8) c.GLuint {
 
 fn compileShader(cwd: std.fs.Dir, relativePath: []const u8, comptime shaderType: c.GLenum) !c.GLuint {
   var compileResult: c.GLint = c.GL_FALSE;
-  
+
   const shaderFile = try cwd.openFile(relativePath, .{});
   defer shaderFile.close();
 
