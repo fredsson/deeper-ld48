@@ -1,14 +1,19 @@
 const c = @import("../../c.zig");
+const std = @import("std");
 const math = @import("../../math/math.zig");
 const Shader = @import("../shader.zig").Shader;
+const PlayerListener = @import("../../game/player.zig").PlayerListener;
+
 
 const noPointerOffset: ?*const c_void = @intToPtr(?*c_void, 0);
 
 pub const PlayerView = struct {
+  const Self = @This();
   position: math.Mat4x4,
   vertexArrayId: c.GLuint,
+  playerListener: PlayerListener,
 
-  pub fn init() PlayerView {
+  pub fn init(allocator: *std.mem.Allocator) *PlayerView {
     var vertexArrayId: c.GLuint = 0;
     var vertexBufferId: c.GLuint = 0;
     c.glGenBuffers(1, &vertexBufferId);
@@ -26,10 +31,11 @@ pub const PlayerView = struct {
     c.glBindBuffer(c.GL_ARRAY_BUFFER, vertexBufferId);
     c.glVertexAttribPointer(0, 3, c.GL_FLOAT, c.GL_FALSE, 0, noPointerOffset);
 
-    return .{
-      .position = math.Mat4x4.identity,
-      .vertexArrayId = vertexArrayId,
-    };
+    var playerView = allocator.create(PlayerView) catch unreachable;
+    playerView.position = math.Mat4x4.identity;
+    playerView.vertexArrayId = vertexArrayId;
+    playerView.playerListener = PlayerListener{ .onPositionChanged =  updatePosition };
+    return playerView;
   }
 
   pub fn draw(self: *PlayerView, shader: *Shader) void {
@@ -39,10 +45,10 @@ pub const PlayerView = struct {
     c.glDrawArrays(c.GL_TRIANGLES, 0, 3);
   }
 
-  pub fn updatePosition(self: *PlayerView, position: math.Vec3) void {
-    const translate = math.Mat4x4.createTranslation(position);
-    const newPosition = self.position.mul(translate);
+  fn updatePosition(listener: *PlayerListener, position: math.Vec3)void {
+    const self = @fieldParentPtr(Self, "playerListener", listener);
 
-    self.position = newPosition;
+    const translate = math.Mat4x4.createTranslation(position);
+    self.position = math.Mat4x4.identity.mul(translate);
   }
 };

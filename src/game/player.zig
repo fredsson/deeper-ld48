@@ -6,14 +6,25 @@ pub const MovementDirection = enum {
   right
 };
 
+pub const PlayerListener = struct {
+  onPositionChanged: fn(listener: *PlayerListener, position: math.Vec3)void,
+
+  pub fn notifyPositionChanged(self: *PlayerListener, position: math.Vec3)void {
+    self.onPositionChanged(self, position);
+  }
+};
+
+
 pub const Player = struct {
   movementFlags: [4]bool,
   position: math.Vec3,
+  listener: *PlayerListener,
 
-  pub fn init(startPosition: math.Vec3) Player {
+  pub fn init(startPosition: math.Vec3, listener: *PlayerListener) Player {
     return Player {
       .movementFlags = .{false, false, false, false},
       .position = startPosition,
+      .listener = listener,
     };
   }
 
@@ -24,6 +35,7 @@ pub const Player = struct {
     const velocity = calculateVelocityFromFlags(self.movementFlags, dt);
 
     self.position = calculateNewPosition(self.position, velocity);
+    self.listener.notifyPositionChanged(self.position);
   }
 
   pub fn onMovement(self: *Player, direction: MovementDirection) void {
