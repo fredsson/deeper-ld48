@@ -11,10 +11,10 @@ pub const Player = struct {
   position: math.Vec3,
   onPositionChanged: fn(position:math.Vec3)void,
 
-  pub fn init(onPositionChanged: fn(position: math.Vec3)void) Player {
+  pub fn init(onPositionChanged: fn(position: math.Vec3)void, startPosition: math.Vec3) Player {
     return Player {
       .movementFlags = .{false, false, false, false},
-      .position = math.Vec3.zero,
+      .position = startPosition,
       .onPositionChanged = onPositionChanged,
     };
   }
