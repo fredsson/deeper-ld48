@@ -2,6 +2,8 @@ const std = @import("std");
 const math = @import("../math/math.zig");
 
 const Player = @import("player.zig").Player;
+const Scene = @import("../gfx/view/scene.zig").Scene;
+const PlayerView = @import("../gfx/view/player-view.zig").PlayerView;
 
 const maxUpdates: u16 = 10;
 const tickRate: f32 = comptime 1.0 / 60.0;
@@ -13,11 +15,16 @@ pub const Game = struct {
   unHandledElapsedFrameTime: f32,
   player: Player,
 
-  pub fn init(allocator: *std.mem.Allocator) *Game {
+  pub fn init(allocator: *std.mem.Allocator, scene: *Scene) *Game {
     var game = allocator.create(Game) catch unreachable;
     game.allocator = allocator;
     game.unHandledElapsedFrameTime = 0;
-    game.player = Player.init(startPosition);
+
+    var playerView = PlayerView.init(allocator);
+
+    scene.addPlayer(playerView);
+
+    game.player = Player.init(startPosition, &playerView.playerListener);
 
     return game;
   }

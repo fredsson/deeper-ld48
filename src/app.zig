@@ -32,7 +32,7 @@ pub const App = struct {
       .running = true,
       .logger = logger,
       .renderer = renderer,
-      .game = Game.init(allocator),
+      .game = Game.init(allocator, scene),
       .scene = scene,
       .frameTimer = std.time.Timer.start() catch unreachable,
     };
